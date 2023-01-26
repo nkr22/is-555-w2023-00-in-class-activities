@@ -36,22 +36,27 @@
 df <- read_csv('https://bit.ly/ugly_fruit_555', col_types = 'ccccccc')
 
 # filter to NA payment methods
+df %>% 
+  filter(is.na(paid))
 
 
 
 
 # filter to "berry" 
 # then either "berry" or "peppers
-
-
-
+# logical/regex is the string detector
+df %>% 
+  filter(str_detect(fruit_desc, 'berry|pepper'))
 
 
 # Hypothetical: Payments are either credit or debit. 
 # Clean up that column
+df %>% 
+  mutate(paid_c= if_else(is.na(paid) | paid =="Dbt", 'debit', 'credit')) %>% 
+  count(paid, paid_c)
 
-
-
+df %>% 
+  mutate(paid= if_else(is.na(paid) | paid =="Dbt", 'debit', 'credit'))
 
 
 
@@ -72,36 +77,70 @@ df <- read_csv('https://bit.ly/ugly_fruit_555', col_types = 'ccccccc')
 # numeric means either integer or double
 # can use as.numeric
 
+df %>% 
+  mutate(tax_per_c = as.numeric(tax_per))
+
 
 
 
 # Let's try it with price_per...
 # Use parse_number instead.
 
+df %>% 
+  mutate(price_per_c = as.numeric(price_per))
+
+df %>% 
+  mutate(price_per_c = parse_number(price_per))
+
 
 
 
 
 # parse_number with amt_sold?
+# this is bad
+# df %>% 
+#   mutate(amt_sold_c=parse_number(amt_sold))
 
+df %>% 
+  mutate(units=if_else(str_detect(amt_sold, 'lbs'), 'lbs', 'kg')) %>% 
+  mutate(amt_sold_c=parse_number(amt_sold))
 
-
-
+df %>% 
+  separate(amt_sold, into = c('amt_sold_c', 'units'), sep=' ', convert=T)
 
 
 # Convert some dates...which lets you do stuff
 # Then check which fruit were sold before the best_by
+library(lubridate)
 
-
-
-
+df %>% 
+  mutate(best_by_date=mdy(best_by_date)) %>% 
+  mutate(sold_date=mdy_hms(sold_date)) %>% 
+  mutate(hour=hour(sold_date)) %>% 
+  mutate(sold_date_notime=as_date(sold_date)) %>% 
+  mutate(diff=sold_date_notime-best_by_date) %>% 
+  View()
 
 
 # clean up the desc column.
+# df %>% 
+#   mutate(category = str_extract(fruit_desc, 'berry|other')) %>% 
+#   filter(is.na(category))
+#   count(category)
 
+df %>% 
+    mutate(category = str_extract(fruit_desc, 'berry|other|peppers')) %>%
+    count(category)
 
+df %>% 
+  mutate(fruit_desc_c=str_replace(fruit_desc, '--', ',')) %>% 
+  separate(fruit_desc_c, into= c('category', 'fruit'), sep=',')
 
+# df %>% 
+#   mutate(price_per_c=str_remove(price_per, '$ '))
 
+df %>% 
+  mutate(price_per_c=str_remove(price_per, '\\$ '))
 
 # BONUS: separate
 
